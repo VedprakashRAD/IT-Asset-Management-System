@@ -3,96 +3,139 @@
 {% block title %}Assets - IT Asset Management{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Assets</h2>
-    <a href="{{ url_for('main.new_asset') }}" class="btn btn-primary">
-        <i class="bi bi-plus"></i> Add New Asset
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="fs-4 fw-bold mb-0">Assets</h1>
+    <a href="{{ url_for('main.new_asset') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Add Asset
     </a>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
+<div class="card mb-4">
+    <div class="card-body p-0">
+        <div class="table-filterable">
+            <table class="table table-hover sortable mb-0">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Serial Number</th>
-                        <th>Department</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Assigned To</th>
-                        <th>Actions</th>
+                        <th data-sort="text">Asset Tag</th>
+                        <th data-sort="text">Name</th>
+                        <th data-sort="text">Type</th>
+                        <th data-sort="text">Department</th>
+                        <th data-sort="text">Status</th>
+                        <th data-sort="date">Purchase Date</th>
+                        <th class="actions-column">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for asset in assets %}
                     <tr>
+                        <td>{{ asset.tag }}</td>
                         <td>{{ asset.name }}</td>
-                        <td>{{ asset.serial_number }}</td>
+                        <td>{{ asset.type.name }}</td>
                         <td>{{ asset.department.name }}</td>
-                        <td>{{ asset.asset_type.name }}</td>
                         <td>
-                            {% if asset.status == 'Available' %}
-                                <span class="badge bg-success">{{ asset.status }}</span>
-                            {% elif asset.status == 'Assigned' %}
-                                <span class="badge bg-primary">{{ asset.status }}</span>
-                            {% elif asset.status == 'Maintenance' %}
-                                <span class="badge bg-warning">{{ asset.status }}</span>
-                            {% elif asset.status == 'Retired' %}
-                                <span class="badge bg-secondary">{{ asset.status }}</span>
-                            {% endif %}
+                            <span class="badge {% if asset.status == 'Active' %}bg-success{% elif asset.status == 'Maintenance' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ asset.status }}
+                            </span>
                         </td>
-                        <td>{{ asset.user.username if asset.user else 'None' }}</td>
-                        <td>
-                            <div class="btn-group">
-                                <a href="{{ url_for('main.edit_asset', id=asset.id) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                {% if current_user.is_admin %}
-                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ asset.id }}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                                {% endif %}
-                            </div>
+                        <td>{{ asset.purchase_date.strftime('%Y-%m-%d') }}</td>
+                        <td class="actions-column">
+                            <a href="{{ url_for('main.edit_asset', id=asset.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{{ url_for('main.delete_asset', id=asset.id) }}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
                         </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-3">No assets found. <a href="{{ url_for('main.new_asset') }}">Add your first asset</a>.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        
-        {% if not assets %}
-        <div class="text-center py-4">
-            <p class="text-muted">No assets found. Click "Add New Asset" to create one.</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
-<!-- Delete Modals -->
-{% for asset in assets %}
-{% if current_user.is_admin %}
-<div class="modal fade" id="deleteModal{{ asset.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ asset.id }}" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel{{ asset.id }}">Confirm Delete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-pie-chart"></i> Asset Distribution</h5>
+                <p class="text-muted small mb-3">Assets by department</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Department</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>IT</td>
+                                <td>24</td>
+                                <td>57%</td>
+                            </tr>
+                            <tr>
+                                <td>Marketing</td>
+                                <td>8</td>
+                                <td>19%</td>
+                            </tr>
+                            <tr>
+                                <td>Sales</td>
+                                <td>6</td>
+                                <td>14%</td>
+                            </tr>
+                            <tr>
+                                <td>HR</td>
+                                <td>4</td>
+                                <td>10%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="modal-body">
-                Are you sure you want to delete the asset "{{ asset.name }}"? This action cannot be undone.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="{{ url_for('main.delete_asset', id=asset.id) }}" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-bar-chart"></i> Asset Status</h5>
+                <p class="text-muted small mb-3">Current status of all assets</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-success">Active</span></td>
+                                <td>35</td>
+                                <td>83%</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning">Maintenance</span></td>
+                                <td>5</td>
+                                <td>12%</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger">Retired</span></td>
+                                <td>2</td>
+                                <td>5%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endif %}
-{% endfor %}
 {% endblock %} 
