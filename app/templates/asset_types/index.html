@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Types - IT Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Asset Types</h2>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('main.new_asset_type') }}" class="btn btn-primary">
+        <i class="bi bi-plus"></i> Add New Asset Type
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Asset Count</th>
+                        {% if current_user.is_admin %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset_type in asset_types %}
+                    <tr>
+                        <td>{{ asset_type.name }}</td>
+                        <td>{{ asset_type.description }}</td>
+                        <td>{{ asset_type.assets|length }}</td>
+                        {% if current_user.is_admin %}
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('main.edit_asset_type', id=asset_type.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ asset_type.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not asset_types %}
+        <div class="text-center py-4">
+            <p class="text-muted">No asset types found. {% if current_user.is_admin %}Click "Add New Asset Type" to create one.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Modals -->
+{% if current_user.is_admin %}
+{% for asset_type in asset_types %}
+<div class="modal fade" id="deleteModal{{ asset_type.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ asset_type.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel{{ asset_type.id }}">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the asset type "{{ asset_type.name }}"? This action cannot be undone.
+                {% if asset_type.assets %}
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i> This asset type has {{ asset_type.assets|length }} associated assets. You cannot delete it until all assets are reassigned.
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('main.delete_asset_type', id=asset_type.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-danger" {% if asset_type.assets %}disabled{% endif %}>Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %} 

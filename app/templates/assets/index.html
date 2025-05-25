@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Assets - IT Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Assets</h2>
+    <a href="{{ url_for('main.new_asset') }}" class="btn btn-primary">
+        <i class="bi bi-plus"></i> Add New Asset
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Serial Number</th>
+                        <th>Department</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Assigned To</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    <tr>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.serial_number }}</td>
+                        <td>{{ asset.department.name }}</td>
+                        <td>{{ asset.asset_type.name }}</td>
+                        <td>
+                            {% if asset.status == 'Available' %}
+                                <span class="badge bg-success">{{ asset.status }}</span>
+                            {% elif asset.status == 'Assigned' %}
+                                <span class="badge bg-primary">{{ asset.status }}</span>
+                            {% elif asset.status == 'Maintenance' %}
+                                <span class="badge bg-warning">{{ asset.status }}</span>
+                            {% elif asset.status == 'Retired' %}
+                                <span class="badge bg-secondary">{{ asset.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ asset.user.username if asset.user else 'None' }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('main.edit_asset', id=asset.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if current_user.is_admin %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ asset.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not assets %}
+        <div class="text-center py-4">
+            <p class="text-muted">No assets found. Click "Add New Asset" to create one.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Modals -->
+{% for asset in assets %}
+{% if current_user.is_admin %}
+<div class="modal fade" id="deleteModal{{ asset.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ asset.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel{{ asset.id }}">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the asset "{{ asset.name }}"? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('main.delete_asset', id=asset.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %} 
