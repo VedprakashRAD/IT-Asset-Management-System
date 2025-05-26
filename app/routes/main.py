@@ -1,9 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
-from app.models.models import Asset, Department, AssetType, User, db
+from app import db
+from app.models.models import Asset, Department, AssetType, User, Permission, Role
 from app.forms.forms import AssetForm, DepartmentForm, AssetTypeForm, UserForm
 from datetime import datetime
 from functools import wraps
+from app.decorators import permission_required, admin_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -17,18 +19,36 @@ def admin_required(f):
     return decorated_function
 
 @main_bp.route('/')
+@main_bp.route('/index')
+@login_required
 def index():
-    return render_template('index.html', title='Home')
+    # Dashboard stats
+    asset_count = Asset.query.count()
+    department_count = Department.query.count()
+    asset_type_count = AssetType.query.count()
+    user_count = User.query.count()
+    
+    # Recent assets
+    recent_assets = Asset.query.order_by(Asset.created_at.desc()).limit(5).all()
+    
+    return render_template('index.html', 
+                          asset_count=asset_count,
+                          department_count=department_count,
+                          asset_type_count=asset_type_count,
+                          user_count=user_count,
+                          recent_assets=recent_assets)
 
 # Asset routes
 @main_bp.route('/assets')
 @login_required
+@permission_required(Permission.VIEW)
 def assets():
     assets = Asset.query.all()
     return render_template('assets/index.html', title='Assets', assets=assets)
 
 @main_bp.route('/assets/new', methods=['GET', 'POST'])
 @login_required
+@permission_required(Permission.CREATE)
 def new_asset():
     form = AssetForm()
     form.department_id.choices = [(d.id, d.name) for d in Department.query.order_by('name')]
@@ -58,6 +78,7 @@ def new_asset():
 
 @main_bp.route('/assets/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
+@permission_required(Permission.EDIT)
 def edit_asset(id):
     asset = Asset.query.get_or_404(id)
     form = AssetForm(obj=asset)
@@ -89,7 +110,7 @@ def edit_asset(id):
 
 @main_bp.route('/assets/<int:id>/delete', methods=['POST'])
 @login_required
-@admin_required
+@permission_required(Permission.DELETE)
 def delete_asset(id):
     asset = Asset.query.get_or_404(id)
     db.session.delete(asset)
@@ -100,13 +121,14 @@ def delete_asset(id):
 # Department routes
 @main_bp.route('/departments')
 @login_required
+@permission_required(Permission.VIEW)
 def departments():
     departments = Department.query.all()
     return render_template('departments/index.html', title='Departments', departments=departments)
 
 @main_bp.route('/departments/new', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required(Permission.CREATE)
 def new_department():
     form = DepartmentForm()
     if form.validate_on_submit():
@@ -120,7 +142,7 @@ def new_department():
 
 @main_bp.route('/departments/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required(Permission.EDIT)
 def edit_department(id):
     department = Department.query.get_or_404(id)
     form = DepartmentForm(obj=department)
@@ -136,7 +158,7 @@ def edit_department(id):
 
 @main_bp.route('/departments/<int:id>/delete', methods=['POST'])
 @login_required
-@admin_required
+@permission_required(Permission.DELETE)
 def delete_department(id):
     department = Department.query.get_or_404(id)
     if department.assets:
@@ -151,13 +173,14 @@ def delete_department(id):
 # Asset Type routes
 @main_bp.route('/asset_types')
 @login_required
+@permission_required(Permission.VIEW)
 def asset_types():
     asset_types = AssetType.query.all()
     return render_template('asset_types/index.html', title='Asset Types', asset_types=asset_types)
 
 @main_bp.route('/asset_types/new', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required(Permission.CREATE)
 def new_asset_type():
     form = AssetTypeForm()
     if form.validate_on_submit():
@@ -171,7 +194,7 @@ def new_asset_type():
 
 @main_bp.route('/asset_types/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required(Permission.EDIT)
 def edit_asset_type(id):
     asset_type = AssetType.query.get_or_404(id)
     form = AssetTypeForm(obj=asset_type)
@@ -187,7 +210,7 @@ def edit_asset_type(id):
 
 @main_bp.route('/asset_types/<int:id>/delete', methods=['POST'])
 @login_required
-@admin_required
+@permission_required(Permission.DELETE)
 def delete_asset_type(id):
     asset_type = AssetType.query.get_or_404(id)
     if asset_type.assets:
@@ -199,13 +222,41 @@ def delete_asset_type(id):
     flash('Asset Type deleted successfully!', 'success')
     return redirect(url_for('main.asset_types'))
 
-# User management routes (admin only)
+# User management routes
 @main_bp.route('/users')
 @login_required
 @admin_required
 def users():
     users = User.query.all()
-    return render_template('users/index.html', title='Users', users=users)
+    roles = Role.query.all()
+    recent_users = User.query.order_by(User.last_login.desc()).limit(5).all()
+    return render_template('admin/users.html', users=users, roles=roles, recent_users=recent_users)
+
+@main_bp.route('/users/new', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def new_user():
+    form = UserForm()
+    form.user_id = None
+    
+    if form.validate_on_submit():
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            is_active=form.is_active.data,
+            role_id=form.role.data
+        )
+        
+        if form.password.data:
+            user.password = form.password.data
+            
+        db.session.add(user)
+        db.session.commit()
+        flash('User created successfully!', 'success')
+        return redirect(url_for('main.users'))
+    
+    form.is_active.data = True
+    return render_template('admin/user_form.html', form=form, title='New User')
 
 @main_bp.route('/users/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -213,31 +264,42 @@ def users():
 def edit_user(id):
     user = User.query.get_or_404(id)
     form = UserForm(obj=user)
+    form.user_id = user.id
     
     if form.validate_on_submit():
         user.username = form.username.data
         user.email = form.email.data
-        user.is_admin = form.is_admin.data
+        user.is_active = form.is_active.data
+        user.role_id = form.role.data
+        
+        if form.password.data:
+            user.password = form.password.data
+            
         db.session.commit()
         flash('User updated successfully!', 'success')
         return redirect(url_for('main.users'))
     
-    return render_template('users/form.html', title='Edit User', form=form)
+    return render_template('admin/user_form.html', form=form, user=user, title='Edit User')
 
-@main_bp.route('/users/<int:id>/delete', methods=['POST'])
+@main_bp.route('/users/<int:id>/delete')
 @login_required
 @admin_required
 def delete_user(id):
-    if id == current_user.id:
-        flash('You cannot delete your own account!', 'danger')
-        return redirect(url_for('main.users'))
-    
     user = User.query.get_or_404(id)
-    if user.assigned_assets:
-        flash('Cannot delete user with assigned assets!', 'danger')
+    
+    # Prevent deleting the last admin user
+    if user.is_administrator() and User.query.filter(User.role_id == user.role_id).count() <= 1:
+        flash('Cannot delete the last administrator!', 'danger')
         return redirect(url_for('main.users'))
     
     db.session.delete(user)
     db.session.commit()
     flash('User deleted successfully!', 'success')
-    return redirect(url_for('main.users')) 
+    return redirect(url_for('main.users'))
+
+# Admin routes
+@main_bp.route('/admin')
+@login_required
+@admin_required
+def admin():
+    return render_template('admin/index.html') 

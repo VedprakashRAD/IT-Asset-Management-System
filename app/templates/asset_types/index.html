@@ -31,7 +31,7 @@
                     <tr>
                         <td>{{ asset_type.name }}</td>
                         <td>{{ asset_type.description }}</td>
-                        <td>{{ asset_type.assets|length }}</td>
+                        <td>{{ asset_type.assets.count() }}</td>
                         {% if current_user.is_admin %}
                         <td>
                             <div class="btn-group">
@@ -70,9 +70,9 @@
             </div>
             <div class="modal-body">
                 Are you sure you want to delete the asset type "{{ asset_type.name }}"? This action cannot be undone.
-                {% if asset_type.assets %}
+                {% if asset_type.assets.count() > 0 %}
                 <div class="alert alert-warning mt-3">
-                    <i class="bi bi-exclamation-triangle"></i> This asset type has {{ asset_type.assets|length }} associated assets. You cannot delete it until all assets are reassigned.
+                    <i class="bi bi-exclamation-triangle"></i> This asset type has {{ asset_type.assets.count() }} associated assets. You cannot delete it until all assets are reassigned.
                 </div>
                 {% endif %}
             </div>
@@ -80,7 +80,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <form action="{{ url_for('main.delete_asset_type', id=asset_type.id) }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <button type="submit" class="btn btn-danger" {% if asset_type.assets %}disabled{% endif %}>Delete</button>
+                    <button type="submit" class="btn btn-danger" {% if asset_type.assets.count() > 0 %}disabled{% endif %}>Delete</button>
                 </form>
             </div>
         </div>

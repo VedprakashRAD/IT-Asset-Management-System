@@ -4,57 +4,58 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_bcrypt import Bcrypt
-from app.models.models import db, User
+from flask_migrate import Migrate
+from config import Config
 
+# Initialize extensions
+db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 bcrypt = Bcrypt()
+migrate = Migrate()
+
+login_manager.login_view = 'auth.login'
+login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-def create_app(test_config=None):
+def create_app(config_class=Config):
     app = Flask(__name__)
-    
-    # Configure the app
-    if test_config is None:
-        app.config.from_mapping(
-            SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
-            SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///app.db'),
-            SQLALCHEMY_TRACK_MODIFICATIONS=False
-        )
-    else:
-        app.config.from_mapping(test_config)
+    app.config.from_object(config_class)
     
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message_category = 'info'
     csrf.init_app(app)
     bcrypt.init_app(app)
     
     # Register blueprints
-    from app.routes.auth import auth_bp
-    from app.routes.main import main_bp
+    from app.routes.auth import auth as auth_blueprint
+    from app.routes.main import main_bp as main_blueprint
     from app.errors import errors_bp
     
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_blueprint)
+    app.register_blueprint(main_blueprint)
     app.register_blueprint(errors_bp)
     
-    # Create database tables
+    # Register error handlers
+    from app.errors import register_error_handlers
+    register_error_handlers(app)
+    
+    # Setup roles
     with app.app_context():
         db.create_all()
         
         # Create initial data if database is empty
+        from app.models.models import User, Department, AssetType, Role
+        
         if User.query.count() == 0:
-            from app.models.models import Department, AssetType
-            
             # Create default admin user
             admin = User(username='admin', email='admin@example.com', is_admin=True)
-            admin.set_password('admin123')
+            admin.password = 'admin123'
             db.session.add(admin)
             
             # Create default departments
@@ -76,6 +77,15 @@ def create_app(test_config=None):
             ]
             db.session.add_all(asset_types)
             
+            # Create default roles
+            Role.insert_roles()
+            
             db.session.commit()
+    
+    # Make Permission available in templates
+    from app.models.models import Permission
+    @app.context_processor
+    def inject_permissions():
+        return dict(Permission=Permission)
     
     return app

@@ -1,17 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}500 Server Error - IT Asset Management{% endblock %}
+{% block title %}500 - Server Error{% endblock %}
 
 {% block content %}
-<div class="text-center py-4">
-    <div class="mb-3">
-        <i class="bi bi-exclamation-triangle" style="font-size: 4rem; color: var(--primary);"></i>
-    </div>
-    <h1 class="display-1 fw-bold">500</h1>
-    <h2 class="mb-3 fs-4">Server Error</h2>
+<div class="text-center py-5">
+    <h1 class="display-1 text-muted">500</h1>
+    <h2 class="mb-4">Server Error</h2>
     <p class="lead">Something went wrong on our end. Please try again later.</p>
-    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-sm mt-3">
-        <i class="bi bi-house me-1"></i> Return to Home
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary mt-3">
+        <i class="bi bi-house-door me-2"></i>Return to Home
     </a>
 </div>
 {% endblock %} 
