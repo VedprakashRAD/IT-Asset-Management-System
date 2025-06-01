@@ -63,10 +63,10 @@ The IT Asset Management System is a comprehensive web application designed and d
 During the development process, we encountered several technical challenges:
 
 1. **Dependency Management Challenge**
-   When starting the project, we faced Flask installation issues in the base Python environment. The error "ModuleNotFoundError: No module named 'flask'" prevented the application from running. To solve this, we created a dedicated virtual environment using `python -m venv venv` and installed specific versions of all dependencies. This isolated environment approach is a DevOps best practice that ensures consistency across different development and deployment environments.
+   When initiating the project, we encountered issues with Flask installations in the root Python environment. The ModuleNotFoundError: No module named 'flask' error issue stopped the application from running. We resolved this by creating a separate virtual environment with python -m venv venv and installing precise versions of all the dependencies. This approach of having separate environments is a DevOps best practice that guarantees uniformity across various development and deployment environments.
 
 2. **Werkzeug Compatibility Issue**
-   We encountered a compatibility issue with newer versions of Werkzeug. The error "ImportError: cannot import name 'url_parse' from 'werkzeug.urls'" occurred because the `url_parse` function had been moved or renamed in the version we were using. Rather than downgrading Werkzeug (which could introduce other compatibility issues), we modified our URL validation logic to use simpler string methods to check for external URLs. This demonstrated problem-solving and adaptability in the face of dependency challenges.
+  We had a compatibility problem with more recent versions of Werkzeug. The exception "ImportError: cannot import name 'url_parse' from 'werkzeug.urls'" was caused because the url_parse function had either been relocated or renamed in the version that we were utilizing. Instead of downgrading Werkzeug (which would bring additional compatibility problems), we changed our URL validation code to make use of more straightforward string methods to detect external URLs. This illustrated problem-solving and flexibility under dependency issues.
 
 3. **Database Relationship Complexity**
    Managing the relationships between users, assets, departments, and asset types required careful consideration. We leveraged SQLAlchemy's relationship features with appropriate backref configurations to ensure data integrity and efficient querying. For example, the relationship between assets and users needed to handle both assignment and creation relationships while preventing circular dependencies.
@@ -87,10 +87,11 @@ During the development process, we encountered several technical challenges:
    The authentication system uses Flask-Login for session management and Bcrypt for secure password hashing. When a user registers, their password is hashed using Bcrypt before storage. During login, the entered password is hashed and compared with the stored hash. The system also implements role-based access control, where certain routes and actions are restricted to users with admin privileges.
 
 3. **Form Validation**
-   All input forms use Flask-WTF and WTForms for validation and CSRF protection. For example, the asset creation form validates that required fields like name and serial number are provided, that serial numbers are unique, and that dates and costs are in the correct format. This prevents invalid data from entering the system and protects against cross-site request forgery attacks.
+   All forms of input utilize Flask-WTF and WTForms for CSRF protection and validation. As an example, the asset creation form validates that necessary fields such as name and serial number are entered, that serial numbers are unique, and that dates and costs are properly formatted. This keeps bad data out of the system and helps prevent cross-site request forgery attacks.
+
 
 4. **Responsive Interface**
-   The user interface is built using Bootstrap 5, making it mobile-friendly and accessible on various devices. The templates use Jinja2 for dynamic content rendering, with conditional logic to show different options based on user roles. For instance, delete buttons are only shown to administrators, while regular users can only see and edit their assigned assets.
+  The user interface is developed on Bootstrap 5, thus it is mobile-responsive and runs on different devices. The templates use Jinja2 for dynamic content rendering, with conditional logic to show different options based on user roles. For instance, delete buttons are only shown to administrators, while regular users can only see and edit their assigned assets.
 
 5. **Theme Management**
    The application implements a modern light/dark theme system with automatic detection of system preferences. The theme system uses CSS variables for consistent styling across the application and JavaScript for theme toggling and persistence. The UI adapts seamlessly between themes, ensuring proper contrast and readability in both modes.
@@ -291,9 +292,9 @@ Check permissions in templates:
 
 This IT Asset Management System project demonstrates how modern web development techniques, security best practices, and DevOps methodologies can be combined to create a robust application that meets real-world business needs. The implementation satisfies all requirements of the QAC020X328 Software Engineering and DevOps assignment while providing a practical solution for IT asset tracking and management.
 
-The project's modular architecture ensures maintainability and extensibility, while the comprehensive security measures protect against common vulnerabilities. The role-based access control system provides granular permission management, allowing organizations to implement the principle of least privilege effectively.
+TThe modular architecture of the project guarantees extensibility and maintainability, and the extensive security provisions guard against standard vulnerabilities. The permission system based on role-based access ensures fine-grained management of permissions, enabling the organizations to enforce the principle of least privilege effectively.
 
-By following DevOps practices throughout the development lifecycle, we've created a solution that can be easily deployed, maintained, and extended. The documentation provided in this README offers clear guidance for developers who wish to understand, use, or extend the system.
+Following the DevOps culture throughout the development cycle, we have developed a solution that is easily deployable, manageable, and extendable. The documentation provided in this README offers clear guidance for developers who wish to understand, use, or extend the system.
 
 ## License
 
